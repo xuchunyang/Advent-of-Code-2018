@@ -2,6 +2,16 @@
 
 #+PROPERTY: header-args:elisp :lexical t
 
+* Table of Contents                                               :TOC:QUOTE:
+#+BEGIN_QUOTE
+- [[#day-1-chronal-calibration][Day 1: Chronal Calibration]]
+  - [[#part-one][Part One]]
+  - [[#part-two][Part Two]]
+- [[#day-2-inventory-management-system][Day 2: Inventory Management System]]
+  - [[#part-one-1][Part one]]
+  - [[#part-two-1][Part Two]]
+#+END_QUOTE
+
 * Day 1: Chronal Calibration
 
 ** Part One
