@@ -10,6 +10,9 @@
 - [[#day-2-inventory-management-system][Day 2: Inventory Management System]]
   - [[#part-one-1][Part one]]
   - [[#part-two-1][Part Two]]
+- [[#day-3-no-matter-how-you-slice-it][Day 3: No Matter How You Slice it]]
+  - [[#part-one-2][Part One]]
+  - [[#part-two-2][Part Two]]
 #+END_QUOTE
 
 * Day 1: Chronal Calibration
@@ -232,3 +235,185 @@ test helper 2
 
 #+RESULTS:
 : advent-of-code-2018-2-2
+
+* Day 3: No Matter How You Slice it
+
+** Part One
+
+#+NAME: day3-table-1
+| #1 @ 1,3: 4x4 |
+| #2 @ 3,1: 4x4 |
+| #3 @ 5,5: 2x2 |
+
+Parse input
+
+#+BEGIN_SRC elisp
+(defun advent-of-code-2018-3-1-parse (inputs)
+  (let ((regexp (replace-regexp-in-string
+                 "_"
+                 (rx (group (1+ num)))
+                 ;; #1 @ 1,3: 4x4
+                 "#_ @ _,_: _x_"
+                 nil
+                 'literal)))
+    (mapcar (lambda (s)
+              (cl-assert (string-match regexp s))
+              (list :id   (string-to-number (match-string 1 s))
+                    :left (string-to-number (match-string 2 s))
+                    :top  (string-to-number (match-string 3 s))
+                    :wide (string-to-number (match-string 4 s))
+                    :tall (string-to-number (match-string 5 s))))
+            inputs)))
+#+END_SRC
+
+#+RESULTS:
+: advent-of-code-2018-3-1-parse
+
+#+BEGIN_SRC elisp :var data=day3-table-1[,0]
+(advent-of-code-2018-3-1-parse data)
+#+END_SRC
+
+#+RESULTS:
+| :id | 1 | :left | 1 | :top | 3 | :wide | 4 | :tall | 4 |
+| :id | 2 | :left | 3 | :top | 1 | :wide | 4 | :tall | 4 |
+| :id | 3 | :left | 5 | :top | 5 | :wide | 2 | :tall | 2 |
+
+Area
+
+#+BEGIN_SRC elisp
+(defun advent-of-code-2018-3-1-area (data)
+  (list :width
+        (apply #'max
+               (mapcar (lambda (pl)
+                         (+ (plist-get pl :left)
+                            (plist-get pl :wide)))
+                       data))
+        :height
+        (apply #'max
+               (mapcar (lambda (pl)
+                         (+ (plist-get pl :top)
+                            (plist-get pl :tall)))
+                       data))))
+#+END_SRC
+
+#+RESULTS:
+: advent-of-code-2018-3-1-area
+
+#+BEGIN_SRC elisp :var data=day3-table-1[,0]
+(advent-of-code-2018-3-1-area (advent-of-code-2018-3-1-parse data))
+#+END_SRC
+
+#+RESULTS:
+| :width | 7 | :height | 7 |
+
+#+BEGIN_SRC elisp
+(defun advent-of-code-2018-3-1-make-vector (width height)
+  (let ((vec (make-vector height nil)))
+    (dotimes (i height vec)
+      (setf (elt vec i) (make-vector width 0)))))
+
+(defun advent-of-code-2018-3-1-subr (inputs)
+  (let* ((claims (advent-of-code-2018-3-1-parse inputs))
+         (area (advent-of-code-2018-3-1-area claims))
+         (height (plist-get area :height))
+         (width (plist-get area :width))
+         (vv (advent-of-code-2018-3-1-make-vector width height)))
+    (dolist (claim claims)
+      (let ((x (plist-get claim :left))
+            (y (plist-get claim :top)))
+        (dotimes (i (plist-get claim :wide))
+          (dotimes (j (plist-get claim :tall))
+            (cl-incf (elt (elt vv (+ y j)) (+ x i)))))))
+    (let ((count 0))
+      (dotimes (i width count)
+        (dotimes (j height)
+          (when (> (elt (elt vv i) j) 1)
+            (cl-incf count)))))))
+#+END_SRC
+
+#+RESULTS:
+: advent-of-code-2018-3-1-subr
+
+#+BEGIN_SRC elisp :var inputs=day3-table-1[,0]
+(advent-of-code-2018-3-1-subr inputs)
+#+END_SRC
+
+#+RESULTS:
+: 4
+
+#+BEGIN_SRC elisp
+(defun advent-of-code-2018-3-1 (input-file)
+  (interactive "fInput file: ")
+  (let ((input-lines
+         (with-temp-buffer
+           (insert-file-contents input-file)
+           (split-string (buffer-string) "\n" t))))
+    (message "Answer: %s" (advent-of-code-2018-3-1-subr input-lines))))
+#+END_SRC
+
+#+RESULTS:
+: advent-of-code-2018-3-1
+
+** Part Two
+
+#+BEGIN_SRC elisp
+(defun advent-of-code-2018-3-2-overlap-p (claim vv)
+  (let ((x (plist-get claim :left))
+        (y (plist-get claim :top)))
+    (catch 'overlap
+      (dotimes (i (plist-get claim :wide))
+        (dotimes (j (plist-get claim :tall))
+          (when (> (elt (elt vv (+ y j)) (+ x i)) 1)
+            (throw 'overlap t)))))))
+
+(defun advent-of-code-2018-3-2-subr (inputs)
+  (let* ((claims (advent-of-code-2018-3-1-parse inputs))
+         (area (advent-of-code-2018-3-1-area claims))
+         (height (plist-get area :height))
+         (width (plist-get area :width))
+         (vv (advent-of-code-2018-3-1-make-vector width height)))
+    (dolist (claim claims)
+      (let ((x (plist-get claim :left))
+            (y (plist-get claim :top)))
+        (dotimes (i (plist-get claim :wide))
+          (dotimes (j (plist-get claim :tall))
+            (cl-incf (elt (elt vv (+ y j)) (+ x i)))))))
+    (let ((claim
+           (cl-find-if-not
+            (lambda (claim)
+              (advent-of-code-2018-3-2-overlap-p claim vv))
+            claims)))
+      (cl-assert claim)
+      (plist-get claim :id))))
+#+END_SRC
+
+#+RESULTS:
+: advent-of-code-2018-3-2-subr
+
+#+BEGIN_SRC elisp :var inputs=day3-table-1[,0]
+(advent-of-code-2018-3-2-subr inputs)
+#+END_SRC
+
+#+RESULTS:
+: 3
+
+#+BEGIN_SRC elisp
+(defun advent-of-code-2018-3-2 (input-file)
+  (interactive "fInput file: ")
+  (message
+   "Answer: %s"
+   (advent-of-code-2018-3-2-subr
+    (with-temp-buffer
+      (insert-file-contents input-file)
+      (split-string (buffer-string) "\n" t)))))
+#+END_SRC
+
+#+RESULTS:
+: advent-of-code-2018-3-2
+
+#+BEGIN_SRC elisp
+(advent-of-code-2018-3-2 "inputs/3-2.txt")
+#+END_SRC
+
+#+RESULTS:
+: Answer: 331
