@@ -78,3 +78,147 @@ Test the function against the above table:
 : advent-of-code-2018-1-2
 
 It takes 48.060945s with my input file.
+
+* Day 2: Inventory Management System
+
+** Part one
+
+#+NAME: day2-tb1
+| ID     |
+|--------|
+| abcdef |
+| bababc |
+| abbcde |
+| abcccd |
+| aabcdd |
+| abcdee |
+| ababab |
+
+#+BEGIN_SRC elisp :var data=day2-tb1[,0] :results pp
+(let ((twos 0)
+      (threes 0))
+  (dolist (input data)
+    (let ((lst (string-to-list input)))
+      (when (cl-find-if (lambda (item)
+                          (= 2 (cl-count item lst)))
+                        lst)
+        (cl-incf twos))
+      (when (cl-find-if (lambda (item)
+                          (= 3 (cl-count item lst)))
+                        lst)
+        (cl-incf threes))))
+  (* twos threes))
+#+END_SRC
+
+#+RESULTS:
+: 12
+
+#+BEGIN_SRC elisp
+(defun advent-of-code-2018-2-1 (input-file)
+  (interactive "fInput File: ")
+  (let ((input-lines
+         (with-temp-buffer
+           (insert-file-contents input-file)
+           (split-string (buffer-string) "\n" 'omit-nulls))))
+    (let ((twos 0)
+          (threes 0))
+      (dolist (input input-lines)
+        (let ((lst (string-to-list input)))
+          (when (cl-find-if (lambda (item)
+                              (= 2 (cl-count item lst)))
+                            lst)
+            (cl-incf twos))
+          (when (cl-find-if (lambda (item)
+                              (= 3 (cl-count item lst)))
+                            lst)
+            (cl-incf threes))))
+      (message "Answer: %s" (* twos threes)))))
+#+END_SRC
+
+#+RESULTS:
+: advent-of-code-2018-2-1
+
+** Part Two
+
+helper 1
+
+#+BEGIN_SRC elisp
+(defun advent-of-code-2018-2-2-combinations (list)
+  (let ((i 0)
+        result)
+    (while (< i (length list))
+      (let ((j (1+ i)))
+        (while (< j (length list))
+          (push (cons (nth i list)
+                      (nth j list))
+                result)
+          (cl-incf j)))
+      (cl-incf i))
+    (nreverse result)))
+#+END_SRC
+
+#+RESULTS:
+: advent-of-code-2018-2-2-combinations
+
+test helper 1
+
+#+BEGIN_SRC elisp
+(advent-of-code-2018-2-2-combinations '(a b c))
+#+END_SRC
+
+#+RESULTS:
+: ((a . b) (a . c) (b . c))
+
+helper 2
+
+#+BEGIN_SRC elisp
+(defun advent-of-code-2018-2-2-subr (ids)
+  (cl-some
+   (pcase-lambda (`(,id1 . ,id2))
+     (cl-assert (= (length id1) (length id2)))
+     (let ((diffs 0) pos)
+       (dotimes (i (length id1))
+         (when (/= (elt id1 i) (elt id2 i))
+           (setq pos i)
+           (cl-incf diffs)))
+       (when (= diffs 1)
+         (concat (substring id1 0 pos)
+                 (substring id1 (1+ pos))))))
+   (advent-of-code-2018-2-2-combinations ids)))
+#+END_SRC
+
+#+RESULTS:
+: advent-of-code-2018-2-2-subr
+
+test helper 2
+
+#+NAME: day2-tb2
+| ID    |
+|-------|
+| abcde |
+| fghij |
+| klmno |
+| pqrst |
+| fguij |
+| axcye |
+| wvxyz |
+
+#+BEGIN_SRC elisp :var data=day2-tb2[,0]
+(advent-of-code-2018-2-2-subr data)
+#+END_SRC
+
+#+RESULTS:
+: fgij
+
+#+BEGIN_SRC elisp
+(defun advent-of-code-2018-2-2 (input-file)
+  (interactive "fInput File: ")
+  (let ((input-lines
+         (with-temp-buffer
+           (insert-file-contents input-file)
+           (split-string (buffer-string) "\n" 'omit-nulls))))
+    (message "Answer: %s" (advent-of-code-2018-2-2-subr input-lines))))
+#+END_SRC
+
+#+RESULTS:
+: advent-of-code-2018-2-2
