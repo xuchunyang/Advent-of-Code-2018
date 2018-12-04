@@ -1,0 +1,80 @@
+#+TITLE: Advent of Code 2018 in Emacs Lisp
+
+#+PROPERTY: header-args:elisp :lexical t
+
+* Day 1: Chronal Calibration
+
+** Part One
+
+#+BEGIN_SRC elisp
+(defun advent-of-code-2018-1-1 (input-file)
+  (interactive "fInput file: ")
+  (with-temp-buffer
+    (insert-file-contents input-file)
+    (goto-char (point-min))
+    (let ((frequency 0)
+          change)
+      (while (setq change (ignore-errors (read (current-buffer))))
+        (setq frequency (+ frequency change)))
+      (kill-new (format "%d" frequency))
+      (message "Copied: %d" frequency))))
+#+END_SRC
+
+** Part Two
+
+#+NAME: tb1
+| Changes            | Answer |
+|--------------------+--------|
+| +1, -1             |      0 |
+| +3, +3, +4, -2, -4 |     10 |
+| -6, +3, +8, +5, -6 |      5 |
+| +7, +7, -2, -7, -4 |     14 |
+
+#+BEGIN_SRC elisp
+(defun advent-of-code-2018-1-2-subr (changes)
+  (let ((frequencies (list 0))
+        (cursor changes)
+        frequency)
+    (catch 'found
+      (while t
+        (setq frequency (+ (car frequencies) (car cursor)))
+        (when (memq frequency frequencies)
+          (throw 'found frequency))
+        (push frequency frequencies)
+        (setq cursor (or (cdr cursor) changes))))))
+#+END_SRC
+
+#+RESULTS:
+: advent-of-code-2018-1-2-subr
+
+Test the function against the above table:
+
+#+BEGIN_SRC elisp :var data=tb1[,0]
+(let ((list-of-changes
+       (mapcar (lambda (s)
+                 (mapcar #'string-to-number (split-string s ", " t)))
+               data)))
+  (mapcar #'advent-of-code-2018-1-2-subr list-of-changes))
+#+END_SRC
+
+#+RESULTS:
+| 0 | 10 | 5 | 14 |
+
+#+BEGIN_SRC elisp
+(defun advent-of-code-2018-1-2 (input-file)
+  (interactive "fInput file: ")
+  (let* ((changes
+          (with-temp-buffer
+            (insert-file-contents input-file)
+            (mapcar #'string-to-number
+                    (split-string (buffer-string) "\n" 'omit-nulls))))
+         (frequency
+          (advent-of-code-2018-1-2-subr changes)))
+    (kill-new (format "%d" frequency))
+    (message "Copied: %d" frequency)))
+#+END_SRC
+
+#+RESULTS:
+: advent-of-code-2018-1-2
+
+It takes 48.060945s with my input file.
