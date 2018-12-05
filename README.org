@@ -16,6 +16,9 @@
 - [[#day-4-repose-record][Day 4: Repose Record]]
   - [[#part-one-3][Part One]]
   - [[#part-two-3][Part Two]]
+- [[#day-5-alchemical-reduction][Day 5: Alchemical Reduction]]
+  - [[#part-one-4][Part One]]
+  - [[#part-two-4][Part Two]]
 #+END_QUOTE
 
 * Day 1: Chronal Calibration
@@ -520,3 +523,91 @@ Area
 
 #+RESULTS:
 : 4966
+
+* Day 5: Alchemical Reduction
+
+** Part One
+
+#+BEGIN_SRC elisp
+(with-temp-buffer
+  (insert "dabAcCaCBAcCcaDA")
+  (goto-char (point-min))
+  (while (< (point) (- (point-max) 2))
+    (if (= (abs (- (char-after) (char-after (1+ (point)))))
+           (- ?a ?A))
+        (progn (delete-char 2)
+               (goto-char (point-min)))
+      (forward-char 1)))
+  (buffer-string))
+#+END_SRC
+
+#+RESULTS:
+: dabCBAcaDA
+
+#+BEGIN_SRC elisp
+(defun advent-of-code-2018-5-1-subr (string)
+  (with-temp-buffer
+    (insert string)
+    (goto-char (point-min))
+    (let (next)
+      (while (setq next (char-after (1+ (point))))
+        (if (= (abs (- (char-after) next)) 32)
+            (progn (delete-char 2)
+                   (goto-char (1- (point))))
+          (goto-char (1+ (point))))))
+    (buffer-string)))
+
+(defun advent-of-code-2018-5-1 (input-file)
+  (interactive "fInput file: ")
+  (length
+   (advent-of-code-2018-5-1-subr
+    ;; Trim the final newline
+    (string-trim-right
+     (with-temp-buffer
+       (insert-file-contents input-file)
+       (buffer-string))))))
+#+END_SRC
+
+#+RESULTS:
+: advent-of-code-2018-5-1
+
+#+BEGIN_SRC elisp
+(advent-of-code-2018-5-1 "inputs/5-1.txt")
+#+END_SRC
+
+#+RESULTS:
+: 10766
+
+** Part Two
+
+#+BEGIN_SRC elisp
+(defun advent-of-code-2018-5-2-subr (unit input)
+  (with-temp-buffer
+    (insert input)
+    (goto-char (point-min))
+    (let ((case-fold-search t))
+      (while (search-forward (string unit) nil t)
+        (replace-match "")))
+    (goto-char (point-min))
+    (let (next)
+      (while (setq next (char-after (1+ (point))))
+        (if (= (abs (- (char-after) next)) 32)
+            (progn (delete-char 2)
+                   (goto-char (1- (point))))
+          (goto-char (1+ (point))))))
+    (buffer-size)))
+
+(defun advent-of-code-2018-5-2 (input)
+  (interactive
+   (list
+    (with-temp-buffer
+      (insert-file-contents (read-file-name "Input file: "))
+      (string-trim-right (buffer-string)))))
+  (message
+   "%s"
+   (cl-loop for unit from ?a to ?z
+            minimize (advent-of-code-2018-5-2-subr unit input))))
+#+END_SRC
+
+#+RESULTS:
+: advent-of-code-2018-5-2
