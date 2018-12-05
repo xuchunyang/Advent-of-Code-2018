@@ -13,6 +13,9 @@
 - [[#day-3-no-matter-how-you-slice-it][Day 3: No Matter How You Slice it]]
   - [[#part-one-2][Part One]]
   - [[#part-two-2][Part Two]]
+- [[#day-4-repose-record][Day 4: Repose Record]]
+  - [[#part-one-3][Part One]]
+  - [[#part-two-3][Part Two]]
 #+END_QUOTE
 
 * Day 1: Chronal Calibration
@@ -417,3 +420,103 @@ Area
 
 #+RESULTS:
 : Answer: 331
+
+* Day 4: Repose Record
+
+** Part One
+
+#+BEGIN_SRC elisp
+(defun advent-of-code-2018-4-1-parse (input-file)
+  (with-temp-buffer
+    (insert-file-contents input-file)
+    (sort-lines nil (point-min) (point-max))
+    (goto-char (point-min))
+    (let (id alist beg end)
+      (while (re-search-forward "Guard #\\([0-9]+\\)" nil t)
+        (setq id (string-to-number (match-string 1)))
+        (when (eq :null (alist-get id alist :null))
+          (push (cons id ()) alist))
+        (while (save-excursion
+                 (forward-line 1)
+                 (search-forward "falls asleep" (line-end-position) t))
+          (cl-assert
+           (re-search-forward (rx "00:" (group num num) "] falls asleep")))
+          (setq beg (string-to-number (match-string 1)))
+          (cl-assert (re-search-forward (rx "00:" (group num num) "] wakes up")))
+          (setq end (string-to-number (match-string 1)))
+          (push (cons beg end) (alist-get id alist))))
+      alist)))
+
+(defun advent-of-code-2018-4-1 (input-file)
+  (interactive "fInput file: ")
+  (let* ((parsed (advent-of-code-2018-4-1-parse input-file))
+         (sorted (sort parsed
+                       (lambda (guard1 guard2)
+                         (cl-flet ((sum
+                                    (guard)
+                                    (apply #'+ (mapcar
+                                                (pcase-lambda (`(,beg . ,end))
+                                                  (- end beg))
+                                                (cdr guard)))))
+                           (> (sum guard1)
+                              (sum guard2))))))
+         (guard (car sorted)))
+    (let ((alist (cl-loop for i from 0 to 59
+                          collect (cons i 0))))
+      (pcase-dolist (`(,beg . ,end) (cdr guard))
+        (cl-loop for i from beg to (1- end)
+                 do (cl-incf (alist-get i alist))))
+      ;; assuming only one max
+      (message
+       "%s"
+       (* (car guard)
+          (car (rassq (apply #'max (mapcar #'cdr alist)) alist)))))))
+#+END_SRC
+
+#+RESULTS:
+: advent-of-code-2018-4-1
+
+#+BEGIN_SRC elisp
+(advent-of-code-2018-4-1 "inputs/4-1.txt")
+#+END_SRC
+
+#+RESULTS:
+: 3212
+
+** Part Two
+
+#+BEGIN_SRC elisp
+(defun advent-of-code-2018-4-2-transform (guard)
+  (let ((alist (cl-loop for i from 0 to 59
+                        collect (cons i 0))))
+    (pcase-dolist (`(,beg . ,end) (cdr guard))
+      (cl-loop for i from beg to (1- end)
+               do (cl-incf (alist-get i alist))))
+    (cons (car guard) (rassq
+                       ;; Assuming unique
+                       (apply #'max (mapcar #'cdr alist)) alist))))
+
+
+(defun advent-of-code-2018-4-2 (input-file)
+  (interactive "fInput file: ")
+  (let* ((parsed (advent-of-code-2018-4-1-parse input-file))
+         (guards (mapcar #'advent-of-code-2018-4-2-transform parsed))
+         (sorted (sort guards
+                       (lambda (guard1 guard2)
+                         (> (cddr guard1)
+                            (cddr guard2)))))
+         (guard (car sorted))
+         (id (car guard))
+         (minute (car (cdr guard))))
+    (message "%s" (* id minute))))
+#+END_SRC
+
+#+RESULTS:
+: advent-of-code-2018-4-2
+
+#+BEGIN_SRC elisp
+(advent-of-code-2018-4-2 "inputs/4-2.txt")
+#+END_SRC
+
+#+RESULTS:
+: 4966
