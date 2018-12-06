@@ -1,3 +1,5 @@
+# -*- eval: (toc-org-mode); -*-
+
 #+TITLE: Advent of Code 2018 in Emacs Lisp
 
 #+PROPERTY: header-args:elisp :lexical t
@@ -19,6 +21,9 @@
 - [[#day-5-alchemical-reduction][Day 5: Alchemical Reduction]]
   - [[#part-one-4][Part One]]
   - [[#part-two-4][Part Two]]
+- [[#day-6-chronal-coordinates][Day 6: Chronal Coordinates]]
+  - [[#part-one-5][Part One]]
+  - [[#part-two-5][Part Two]]
 #+END_QUOTE
 
 * Day 1: Chronal Calibration
@@ -611,3 +616,268 @@ Area
 
 #+RESULTS:
 : advent-of-code-2018-5-2
+
+* Day 6: Chronal Coordinates
+
+** Part One
+
+#+NAME: day6-tb1
+| 1 | 1 |
+| 1 | 6 |
+| 8 | 3 |
+| 3 | 4 |
+| 5 | 5 |
+| 8 | 9 |
+
+#+BEGIN_EXAMPLE
+aaaaa.cccc
+aAaaa.cccc
+aaaddecccc
+aadddeccCc
+..dDdeeccc
+bb.deEeecc
+bBb.eeee..
+bbb.eeefff
+bbb.eeffff
+bbb.ffffFf
+#+END_EXAMPLE
+
+#+BEGIN_SRC elisp :var data=day6-tb1 :results pp
+(defun advent-of-code-2018-6-1-make-vector (data)
+  (let (width height vv)
+    (cl-loop initially (setq width 0 height 0)
+             for (x y) in data
+             do (setq width (max width x)
+                      height (max height y))
+             finally
+             (cl-incf width)
+             (cl-incf height))
+    (setq vv (make-vector height nil))
+    (cl-loop for v across-ref vv
+             do (setf v (make-vector width -1)))
+    vv))
+
+(advent-of-code-2018-6-1-make-vector data)
+#+END_SRC
+
+#+RESULTS:
+#+BEGIN_EXAMPLE
+[[-1 -1 -1 -1 -1 -1 -1 -1 -1]
+ [-1 -1 -1 -1 -1 -1 -1 -1 -1]
+ [-1 -1 -1 -1 -1 -1 -1 -1 -1]
+ [-1 -1 -1 -1 -1 -1 -1 -1 -1]
+ [-1 -1 -1 -1 -1 -1 -1 -1 -1]
+ [-1 -1 -1 -1 -1 -1 -1 -1 -1]
+ [-1 -1 -1 -1 -1 -1 -1 -1 -1]
+ [-1 -1 -1 -1 -1 -1 -1 -1 -1]
+ [-1 -1 -1 -1 -1 -1 -1 -1 -1]
+ [-1 -1 -1 -1 -1 -1 -1 -1 -1]]
+#+END_EXAMPLE
+
+#+BEGIN_SRC elisp
+(defun advent-of-code-2018-6-1-manhattan-distance (x1 y1 x2 y2)
+  (+ (abs (- x1 x2))
+     (abs (- y1 y2))))
+#+END_SRC
+
+#+RESULTS:
+: advent-of-code-2018-6-1-manhattan-distance
+
+#+BEGIN_SRC elisp :var data=day6-tb1 :results pp
+(defun advent-of-code-2018-6-1-fill-vector (vv data)
+  (let ((height (length vv))
+        (width (length (elt vv 0))))
+    (dotimes (i height)
+      (dotimes (j width)
+        (let ((tmp
+               (cl-loop for (x y) in data
+                        for index from 0
+                        collect (cons index (+ (abs (- x j)) (abs (- y i)))) into result
+                        finally return (sort result (lambda (p1 p2) (< (cdr p1) (cdr p2)))))))
+          (unless (= (cdr (elt tmp 0))
+                     (cdr (elt tmp 1)))
+            (setf (elt (elt vv i) j) (caar tmp))))))
+    vv))
+
+(advent-of-code-2018-6-1-fill-vector (advent-of-code-2018-6-1-make-vector data) data)
+#+END_SRC
+
+#+RESULTS:
+#+BEGIN_EXAMPLE
+[[0 0 0 0 0 -1 2 2 2]
+ [0 0 0 0 0 -1 2 2 2]
+ [0 0 0 3 3 4 2 2 2]
+ [0 0 3 3 3 4 2 2 2]
+ [-1 -1 3 3 3 4 4 2 2]
+ [1 1 -1 3 4 4 4 4 2]
+ [1 1 1 -1 4 4 4 4 -1]
+ [1 1 1 -1 4 4 4 5 5]
+ [1 1 1 -1 4 4 5 5 5]
+ [1 1 1 -1 5 5 5 5 5]]
+#+END_EXAMPLE
+
+#+BEGIN_SRC elisp :var data=day6-tb1 :results pp
+(defun advent-of-code-2018-6-1-find-infinite (vv)
+  (let ((height (length vv))
+        (width (length (elt vv 0)))
+        result)
+    (dotimes (i height)
+      (dotimes (j width)
+        (when (or (= i 0)
+                  (= i (1- height))
+                  (= j 0)
+                  (= j (1- width)))
+          (push (elt (elt vv i) j) result))))
+    (delq -1 result)))
+
+(advent-of-code-2018-6-1-find-infinite
+ (advent-of-code-2018-6-1-fill-vector
+  (advent-of-code-2018-6-1-make-vector data) data))
+#+END_SRC
+
+#+RESULTS:
+: (5 5 5 5 5 1 1 1 5 1 5 1 1 2 1 2 2 0 2 0 2 0 2 2 2 0 0 0 0 0)
+
+#+BEGIN_SRC elisp :var data=day6-tb1 :results pp
+(defun advent-of-code-2018-6-1-find-finite (vv data)
+  (cl-set-difference
+   (number-sequence 0 (1- (length data)))
+   (advent-of-code-2018-6-1-find-infinite vv)))
+
+(advent-of-code-2018-6-1-find-finite
+ (advent-of-code-2018-6-1-fill-vector
+  (advent-of-code-2018-6-1-make-vector data) data)
+ data)
+#+END_SRC
+
+#+RESULTS:
+: (3 4)
+
+#+BEGIN_SRC elisp :var data=day6-tb1 :results pp
+(defun advent-of-code-2018-6-1-area (vv x)
+  (cl-loop for v across vv
+           sum (cl-loop for i across v
+                        count (= x i))))
+
+
+(advent-of-code-2018-6-1-area
+ (advent-of-code-2018-6-1-fill-vector
+  (advent-of-code-2018-6-1-make-vector data) data)
+ 4)
+#+END_SRC
+
+#+RESULTS:
+: 17
+
+#+BEGIN_SRC elisp :var data=day6-tb1 :results pp
+(defun advent-of-code-2018-6-1-largest-area (data)
+  (let ((vv (advent-of-code-2018-6-1-fill-vector
+             (advent-of-code-2018-6-1-make-vector data)
+             data)))
+    (cl-loop for x in (advent-of-code-2018-6-1-find-finite vv data)
+             maximize (advent-of-code-2018-6-1-area vv x))))
+
+(advent-of-code-2018-6-1-largest-area data)
+#+END_SRC
+
+#+RESULTS:
+: 17
+
+#+BEGIN_SRC elisp
+(defun advent-of-code-2018-6-1-parse (file)
+  (with-temp-buffer
+    (insert-file-contents file)
+    (cl-loop for (a b) on (split-string (buffer-string) (rx (or ", " "\n")) t) by #'cddr
+             collect (list (read a) (read b)))))
+
+(advent-of-code-2018-6-1-parse "inputs/6-1.txt")
+#+END_SRC
+
+#+RESULTS:
+| 137 | 140 |
+| 318 |  75 |
+| 205 | 290 |
+| 104 | 141 |
+| 163 | 104 |
+| 169 | 164 |
+| 238 | 324 |
+| 180 | 166 |
+| 260 | 198 |
+| 189 | 139 |
+| 290 |  49 |
+|  51 | 350 |
+|  51 | 299 |
+|  73 | 324 |
+| 220 | 171 |
+| 146 | 336 |
+| 167 | 286 |
+|  51 | 254 |
+|  40 | 135 |
+| 103 | 138 |
+| 100 | 271 |
+| 104 | 328 |
+|  80 |  67 |
+| 199 | 180 |
+| 320 | 262 |
+| 215 | 290 |
+|  96 | 142 |
+| 314 | 128 |
+| 162 | 106 |
+| 214 | 326 |
+| 303 | 267 |
+| 340 |  96 |
+| 211 | 278 |
+| 335 | 250 |
+|  41 | 194 |
+| 229 | 291 |
+|  45 |  97 |
+| 304 | 208 |
+| 198 | 214 |
+| 250 |  80 |
+| 200 |  51 |
+| 287 |  50 |
+| 120 | 234 |
+| 106 | 311 |
+|  41 | 116 |
+| 359 | 152 |
+| 189 | 207 |
+| 300 | 167 |
+| 318 | 315 |
+| 296 |  72 |
+
+#+BEGIN_SRC elisp
+(advent-of-code-2018-6-1-largest-area (advent-of-code-2018-6-1-parse "inputs/6-1.txt"))
+#+END_SRC
+
+#+RESULTS:
+: 4398
+
+** Part Two
+
+#+BEGIN_SRC elisp :var data=day6-tb1 :results pp
+(defun advent-of-code-2018-6-2-region-size (data limit)
+  (let* ((vv (advent-of-code-2018-6-1-make-vector data))
+         (width (length (elt vv 0)))
+         (height (length vv)))
+    (cl-loop for y below height
+             sum (cl-loop for x below width
+                          count (cl-loop for (x1 y1) in data
+                                         sum (+ (abs (- x x1)) (abs (- y y1))) into tmp
+                                         finally return (< tmp limit))))))
+
+;; Otherwise it will be very slow
+(byte-compile 'advent-of-code-2018-6-2-region-size)
+(advent-of-code-2018-6-2-region-size data 32)
+#+END_SRC
+
+#+RESULTS:
+: 16
+
+#+BEGIN_SRC elisp
+(advent-of-code-2018-6-2-region-size
+ (advent-of-code-2018-6-1-parse "inputs/6-1.txt")
+ 10000)
+#+END_SRC
+
+#+RESULTS:
+: 39560
